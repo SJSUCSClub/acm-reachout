@@ -8,6 +8,9 @@ export default defineManifest({
   icons: {
     128: 'public/chubby-spartan-acm-cropped.png',
   },
+  background: {
+    service_worker: "background.js"
+  },
   action: {
     default_icon: {
       128: 'public/chubby-spartan-acm-cropped.png',
