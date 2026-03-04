@@ -6,11 +6,11 @@ export default defineManifest({
   name: pkg.name,
   version: pkg.version,
   icons: {
-    48: 'public/logo.png',
+    128: 'public/chubby-spartan-acm-cropped.png',
   },
   action: {
     default_icon: {
-      48: 'public/logo.png',
+      128: 'public/chubby-spartan-acm-cropped.png',
     },
     default_popup: 'src/popup/index.html',
   },
