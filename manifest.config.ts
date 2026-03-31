@@ -9,7 +9,8 @@ export default defineManifest({
     128: 'public/chubby-spartan-acm-cropped.png',
   },
   background: {
-    service_worker: "background.ts"
+    service_worker: "src/background.ts",
+    type: "module"
   },
   action: {
     default_icon: {
