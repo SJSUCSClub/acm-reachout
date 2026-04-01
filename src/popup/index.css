@@ -60,6 +60,48 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+#top-pagination {
+  display: inline-flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  border-bottom: 5px solid #1a1a1a;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: 0px;
+
+  button {
+    padding: 5px;
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-bottom: 0px;
+    background-color: transparent;
+    border: 3px solid transparent;
+    border-radius: 0px;
+    background-color: #1a1a1a;
+  }
+  button:active {
+    border-color: transparent;
+    outline: none;
+    border: 0px solid transparent;
+  }
+  button:focus {
+    border-color: transparent;
+    outline: none;
+    border: 3px solid transparent;
+  }
+  button:focus-visible {
+    border-color: transparent;
+    outline: none;
+    border: 3px solid transparent;
+  }
+  button:hover {
+    border-radius: 50px;
+    border: 3px solid white;
+  }
+  #loginPageBtn {
+  }
+}
+
 #disconnectBtn {
   color: #c30101;
 }
@@ -75,6 +117,37 @@ button:focus-visible {
 
 #connectBtn:hover {
   border-color: green;
+}
+
+#login-display-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#action-display-wrapper {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-needed-label {
+  font-size: 24px;
+}
+#logger-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+#logger-result {
+  display: none;
+  max-width: 160px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .card {

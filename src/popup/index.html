@@ -6,9 +6,25 @@
   <body>
     <div id="root"></div>
     <script type="module" src="./main.tsx"></script>
+    <div id="top-pagination">
+      <button id="login-page">Login</button>
+      <button id="action-page">Actions</button>
+    </div>
+    <div id="login-display-wrapper">
       <img id="spartan-img" src="../assets/chubby-spartan-acm.png" alt="Chubby Spartan on ACM Laptop" width="100" />
       <div id="status">Checking...</div>
       <button id="connectBtn">Connect Google</button>
       <button id="disconnectBtn">Disconnect</button>
+    </div>
+
+    <div id="action-display-wrapper">
+      <label class="login-needed-label">Please</label>
+      <label class="login-needed-label">Log-in</label>
+      <label class="login-needed-label">First</label>
+      <div id="logger-wrapper">
+        <button id="logger-button">Log Person</button>
+        <label id="logger-result">logged: XXXXXXXXXXXxxxxxxxxxx</label>
+      </div>
+    </div>
   </body>
 </html>
