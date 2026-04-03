@@ -132,7 +132,17 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
 }
-
+.action-separator {
+  display: block;     
+  border: none;    
+  height: 2px;   
+  background-color: white;
+  margin: 15px;  
+  width: 80%; 
+}
+.action-button {
+  min-width: 150px;
+}
 .login-needed-label {
   font-size: 24px;
 }
@@ -145,10 +155,37 @@ button:focus-visible {
 #logger-result {
   display: none;
   max-width: 160px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
 }
+#logger-button {
+  margin-bottom: 3px;
+  border-color: green;
+}
+#logger-button:hover {
+  color: green;
+}
+#unlog-button {
+  border-color: #c30101;
+  margin-top: 3px;
+}
+#unlog-button:hover {
+  color: #c30101;
+}
+#accept-status-button {
+  color: lightgreen;
+}
+#accept-status-button:hover {
+  border-color: lightgreen;
+}
+#declined-status-button {
+  color: lightcoral;
+}
+#declined-status-button:hover {
+  border-color: lightcoral;
+}
+#clear-status-button {
+  color: lightgray;
+}
+
 
 .card {
   padding: 2em;

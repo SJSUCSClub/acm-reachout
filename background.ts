@@ -88,6 +88,16 @@ async function createSheetInDrive(): Promise<boolean> {
   }
 
   await chrome.storage.local.set({ spreadsheetId, sheetId });
+    await apiFetch(
+    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${SHEET_TITLE}!A:D`)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        values: [["{LogTime}", "{NAME}", "{LINK}", "{StatusSetTime}", "{STATUS}"]],
+      }),
+    }
+  );
+
   return true;
 }
 
@@ -107,15 +117,24 @@ export async function appendRowInSheet(name: string, link?: string, status?: str
     throw new Error("Missing spreadsheetId");
   }
 
+  const alreadyLoggedRow = await searchInColumn(name, "B");
+  if (alreadyLoggedRow !== -1) {
+    throw new Error(`Profile "${name}" already logged in row ${alreadyLoggedRow}; link is not differentiated/checked`);
+  }
+
   const safeLink = link ?? "";
   const safeStatus = status ?? "";
+  let safeStatusTime = "=Now()";
+  if (safeStatus === "") {
+    safeStatusTime = "";
+  }
 
   await apiFetch(
-    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${SHEET_TITLE}!A:C`)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${SHEET_TITLE}!A:D`)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
     {
       method: "POST",
       body: JSON.stringify({
-        values: [[name, safeLink, safeStatus]],
+        values: [["=NOW()", name, safeLink, safeStatusTime, safeStatus]],
       }),
     }
   );
@@ -159,7 +178,6 @@ async function deleteRows(rowStart: number, rowEnd: number) {
 }
 
 export async function searchInColumn(query: string, column: string): Promise<number> {
-
   column = column.trim().toUpperCase();
   if (!/^[A-Z]+$/.test(column)) {
     throw new Error("Invalid column");
@@ -291,10 +309,24 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === "SHEETS_APPEND_ROW") {
+  if (message.type === "LOG_PROFILE") {
     appendRowInSheet(message.name, message.link, message.status)
       .then(() => sendResponse({ ok: true }))
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+    if (message.type === "SHEETS_DELETE_ROW_WITH_NAME") {
+      searchInColumn(message.name, "B")
+      .then((row) => {
+        if (row === -1) {
+          throw new Error(`Profile "${message.name}" not found`);
+        }
+        deleteSingleRow(row)
+          .then(() => sendResponse({ ok: true }))
+          .catch((error) => sendResponse({ ok: false, error: String(error) }));
+
+      });
     return true;
   }
 

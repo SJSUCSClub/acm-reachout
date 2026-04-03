@@ -12,7 +12,13 @@ const actionDisplayWrapper = document.getElementById("action-display-wrapper") a
 const loginNeededLabels = document.getElementsByClassName("login-needed-label") as HTMLCollectionOf<HTMLLabelElement>
 const loggerWrapper = document.getElementById("logger-wrapper") as HTMLDivElement
 const loggerButton = document.getElementById("logger-button") as HTMLButtonElement
+const unlogButton = document.getElementById("unlog-button") as HTMLButtonElement
 const loggerResult = document.getElementById("logger-result") as HTMLLabelElement
+
+const setStatusWrapper = document.getElementById("set-status-wrapper") as HTMLDivElement
+const acceptStatusButton = document.getElementById("accept-status-button") as HTMLButtonElement
+const declinedStatusButton = document.getElementById("declined-status-button") as HTMLButtonElement
+const clearStatusButton = document.getElementById("clear-status-button") as HTMLButtonElement
 
 function setStatus(text: string) {
   statusEl.textContent = text
@@ -99,24 +105,94 @@ actionPageBtn?.addEventListener("click", () => {
 })
 
 loggerButton?.addEventListener("click", async () => {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    // There is only one active tab in the current window, so we access tabs[0]
-    const activeTab = tabs[0];
-    const currentUrl = activeTab.url;
+  const tab = await chrome.tabs.query({ active: true, currentWindow: true });
+  const activeTab = tab[0];
+  const currentUrl = activeTab.url; //URL of the active tab
 
-    if (currentUrl == null) {
-      loggerResult.textContent = "Error: No active tab URL";
-      loggerResult.style.display = "flex";
-    }
-    else if (currentUrl.startsWith("https://www.linkedin.com/in/") || currentUrl.startsWith("linkedin.com/in/")) {
-      loggerResult.textContent = "Logged: " + currentUrl.replace("https://www.linkedin.com/in/", "") as string;
-      loggerResult.style.display = "flex";
-    }
-    else {
-      loggerResult.textContent = "Error: Not a LinkedIn profile page";
-      loggerResult.style.display = "flex";
-    }
+  //Check if URL is a LinkedIn profile page
+  if (currentUrl == null) {
+    loggerResult.textContent = "Error: No active tab URL";
+    loggerResult.style.display = "flex";
+    return
+  }
+  else if (currentUrl.startsWith("https://www.linkedin.com/in/") || currentUrl.startsWith("linkedin.com/in/")) {
+  }
+  else {
+    loggerResult.textContent = "Error: Not a LinkedIn profile page";
+    loggerResult.style.display = "flex";
+    return
+  }
+
+
+  //Getting Profile Name
+  const profileNameHtmlClass : string = "c9d8c8f6 _15265fb1 _454952c6 f212399d _53419e92 _43820a1c e29a707d _654321ed e9d12b7c _72b02528 a5c0828b"
+  const nameFinderResult = await chrome.scripting.executeScript({
+    target: { tabId: activeTab.id as number },
+    func: (className: string) => {
+      const element = document.getElementsByClassName(className)[0] as HTMLElement | undefined;
+      return element ? element.innerText : "Profile Name HTML element not found";
+    },
+    args: [profileNameHtmlClass]
   });
+
+  const profileName = nameFinderResult[0]?.result ?? "Profile Name HTML element not found" ; //Name of the LinkedIn profile owner
+
+  //log it to google sheets
+  const logResult = await chrome.runtime.sendMessage({
+    type: "LOG_PROFILE",
+    name: profileName,
+    link: currentUrl,
+    status: null,
+  })
+
+  if (!logResult?.ok) {
+    loggerResult.textContent = `${logResult?.error || "Error logging profile: Unknown error"}`;
+    loggerResult.style.display = "flex";
+    return
+  }
+
+  loggerResult.textContent = "Logged: " + profileName;
+  loggerResult.style.display = "flex";
+  return
+})
+
+unlogButton?.addEventListener("click", async () => {
+  const tab = await chrome.tabs.query({ active: true, currentWindow: true });
+  const activeTab = tab[0];
+
+    //Getting Profile Name
+  const profileNameHtmlClass : string = "c9d8c8f6 _15265fb1 _454952c6 f212399d _53419e92 _43820a1c e29a707d _654321ed e9d12b7c _72b02528 a5c0828b"
+  const nameFinderResult = await chrome.scripting.executeScript({
+    target: { tabId: activeTab.id as number },
+    func: (className: string) => {
+      const element = document.getElementsByClassName(className)[0] as HTMLElement | undefined;
+      return element ? element.innerText : "Profile Name HTML element not found";
+    },
+    args: [profileNameHtmlClass]
+  });
+
+  const profileName = nameFinderResult[0]?.result ?? "Error: Profile Name HTML element not found" ;
+  if (profileName.startsWith("Error:")) {
+    loggerResult.textContent = profileName;
+    loggerResult.style.display = "flex";
+    return
+  }
+
+  const logResult = await chrome.runtime.sendMessage({
+    type: "SHEETS_DELETE_ROW_WITH_NAME",
+    name: profileName,
+  })
+
+  if (!logResult?.ok) {
+    loggerResult.textContent = `${logResult?.error || "Error unlogging profile: Unknown error"}`;
+    loggerResult.style.display = "flex";
+    return
+  }
+
+  loggerResult.textContent = "Unlogged: " + profileName;
+  loggerResult.style.display = "flex";
+  return
+
 })
 
 
