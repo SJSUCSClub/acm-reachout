@@ -109,7 +109,7 @@ export async function setUp() {
   }
 }
 
-export async function appendRowInSheet(name: string, link?: string, status?: string) {
+export async function appendRowInSheet(name: string, link: string, status?: string) {
   await checkAPIConnection();
 
   const spreadsheetId = await getSpreadsheetId() as string | undefined;
@@ -117,12 +117,11 @@ export async function appendRowInSheet(name: string, link?: string, status?: str
     throw new Error("Missing spreadsheetId");
   }
 
-  const alreadyLoggedRow = await searchInColumn(name, "B");
+  const alreadyLoggedRow = await searchForProfile(name, link);
   if (alreadyLoggedRow !== -1) {
-    throw new Error(`Profile "${name}" already logged in row ${alreadyLoggedRow}; link is not differentiated/checked`);
+    throw new Error(`Profile "${name}" already logged in row ${alreadyLoggedRow}`);
   }
 
-  const safeLink = link ?? "";
   const safeStatus = status ?? "";
   let safeStatusTime = "=Now()";
   if (safeStatus === "") {
@@ -134,7 +133,7 @@ export async function appendRowInSheet(name: string, link?: string, status?: str
     {
       method: "POST",
       body: JSON.stringify({
-        values: [["=NOW()", name, safeLink, safeStatusTime, safeStatus]],
+        values: [["=NOW()", name, link, safeStatusTime, safeStatus]],
       }),
     }
   );
@@ -205,6 +204,59 @@ export async function searchInColumn(query: string, column: string): Promise<num
   }
 
   return -1;
+}
+
+export async function getColumns(leftBound: string, rightBound: string): Promise<string[][]> {
+  leftBound = leftBound.trim().toUpperCase();
+  rightBound = rightBound.trim().toUpperCase();
+  if (!/^[A-Z]+$/.test(leftBound) || !/^[A-Z]+$/.test(rightBound)) {
+    throw new Error("Invalid column");
+  }
+
+  await checkAPIConnection();
+
+  const spreadsheetId = await getSpreadsheetId() as string | undefined;
+  if (!spreadsheetId) {
+    throw new Error("Missing spreadsheetId");
+  }
+
+  const range = `${SHEET_TITLE}!${leftBound}:${rightBound}`;
+
+  const data = await apiFetch(
+    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}`
+  );
+
+  const values: string[][] = data.values || [];
+
+  return values;
+}
+
+export async function searchForProfile(name: string, link: string): Promise<number> {
+  await checkAPIConnection();
+
+  const spreadsheetId = await getSpreadsheetId() as string | undefined;
+  if (!spreadsheetId) {
+    throw new Error("Missing spreadsheetId");
+  }
+
+  const nameColumn = await apiFetch(
+    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(SHEET_TITLE + "!B:B")}`
+  );
+  const nameValues: string[][] = nameColumn.values || [];
+
+  const linkColumn = await apiFetch(
+    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(SHEET_TITLE + "!C:C")}`
+  );
+  const linkValues: string[][] = linkColumn.values || [];
+
+  for (let i = 0; i < nameValues.length; i++) {
+    if (nameValues[i]?.[0] === name && linkValues[i]?.[0] === link) {
+      return i + 1;
+    }
+  }
+
+  return -1;
+
 }
 
 async function setConnectedBadge() {
@@ -316,24 +368,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-    if (message.type === "SHEETS_DELETE_ROW_WITH_NAME") {
-      searchInColumn(message.name, "B")
+    if (message.type === "SHEETS_DELETE_ROW") {
+      searchForProfile(message.name, message.link)
       .then((row) => {
         if (row === -1) {
-          throw new Error(`Profile "${message.name}" not found`);
+          let notFoundError = new Error(`Profile "${message.name}" not found`);
+          sendResponse({ ok: false, error: String(notFoundError) });
+          return;
         }
         deleteSingleRow(row)
           .then(() => sendResponse({ ok: true }))
           .catch((error) => sendResponse({ ok: false, error: String(error) }));
-
       });
-    return true;
-  }
-
-  if (message.type === "SHEETS_DELETE_ROW") {
-    deleteSingleRow(message.row)
-      .then(() => sendResponse({ ok: true }))
-      .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }
 
@@ -343,4 +389,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }
+
+  if (message.type === "SHEETS_GET_COLUMN") {
+    getColumns(message.leftBound, message.rightBound)
+      .then((data) => sendResponse({ ok: true, data }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message.type === "SHEETS_SEARCH_PROFILE") {
+    searchForProfile(message.name, message.link)
+      .then((row) => sendResponse({ ok: true, row }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+
 });
