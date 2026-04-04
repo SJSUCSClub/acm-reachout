@@ -24,17 +24,18 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
+  display: block;
   place-items: center;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  text-align: center;
+  align-content: center;
+  justify-content: center;
+  min-width: auto;
+  min-height: auto;
 }
 
 button {
+  display: block;
+  text-align: center;
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
@@ -44,14 +45,146 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
+  margin: 8px;
 }
 button:hover {
   border-color: #646cff;
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+
+.dropdown-button {
+  width: 90%;
+  margin-top: 25px;
+  margin-bottom: 0px;
+  border-bottom: #646cff solid 1px;
+  border-radius: 8px 8px 0px 0px;
+  font-size: 1.5em;
 }
+.dropdown-display {
+  margin-top: 0px;
+  margin-bottom: 0px;
+  width: 90%;
+  background-color: #1a1a1a;
+  border-radius: 0px 0px 8px 8px;
+}
+
+
+
+#login-dropdown-button {
+  margin-top: 15px;
+}
+
+#login-display-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 10px;
+
+  #disconnectBtn {
+    color: #c30101;
+    border-color: #c30101;
+  }
+
+  #disconnectBtn:hover {
+    color: lightcoral;
+    border-color: lightcoral;
+  }
+
+  #connectBtn {
+    color: green;
+    border-color: green;
+  }
+
+  #connectBtn:hover {
+    color: lightgreen;
+    border-color: lightgreen;
+  }
+
+  #connection-status {
+    font-size: 1.2em;
+  }
+
+}
+
+.login-needed-label {
+  font-size: 24px;
+}
+
+.action-button {
+  min-width: 150px;
+}
+
+#logger-display-wrapper {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0px 10px 0px;
+
+  #logger-result {
+    font-size: 12px;
+    display: block;
+    max-width: 80%;
+    min-height: 12px;
+  }
+
+  #logger-button {
+    margin-bottom: 3px;
+    border-color: green;
+  }
+
+  #logger-button:hover {
+    color: green;
+  }
+
+  #unlog-button {
+    border-color: #c30101;
+    margin-top: 3px;
+  }
+
+  #unlog-button:hover {
+    color: #c30101;
+  }
+}
+
+
+#status-display-wrapper {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0px 10px 0px;
+
+  #status-result {
+    font-size: 12px;
+    display: block;
+    max-width: 80%;
+    min-height: 12px;
+  }
+  
+  #accept-status-button {
+    border-color: green;
+  }
+  #accept-status-button:hover {
+    color: green;
+    border-color: green;
+  }
+  #declined-status-button {
+    border-color: #c30101;
+  }
+  #declined-status-button:hover {
+    color: #c30101;
+    border-color: #c30101;
+  }
+  #clear-status-button {
+    color: rgb(153, 153, 153);
+    min-width: 75px;
+    margin: 2px;
+    padding: 2px;
+    font-size:10px;
+  }
+}
+
 
 .card {
   padding: 2em;
@@ -62,6 +195,10 @@ button:focus-visible {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+}
+
+img {
+  margin: 10px;
 }
 
 @media (prefers-color-scheme: light) {
@@ -76,3 +213,5 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+

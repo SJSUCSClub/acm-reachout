@@ -1,4 +1,3 @@
-import { link } from 'fs'
 import './index.css'
 
 const loginPageBtn = document.getElementById("login-page") as HTMLButtonElement
