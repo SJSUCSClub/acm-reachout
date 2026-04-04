@@ -6,9 +6,36 @@
   <body>
     <div id="root"></div>
     <script type="module" src="./main.tsx"></script>
+    <div id="top-pagination">
+      <button id="login-page">Login</button>
+      <button id="action-page">Actions</button>
+    </div>
+    <div id="login-display-wrapper">
       <img id="spartan-img" src="../assets/chubby-spartan-acm.png" alt="Chubby Spartan on ACM Laptop" width="100" />
       <div id="status">Checking...</div>
       <button id="connectBtn">Connect Google</button>
       <button id="disconnectBtn">Disconnect</button>
+    </div>
+
+    <div id="action-display-wrapper">
+      <label class="login-needed-label">Please</label>
+      <label class="login-needed-label">Log-in</label>
+      <label class="login-needed-label">First</label>
+      <div id="logger-wrapper">
+        <button class="action-button" id="logger-button">Log Person</button>
+        <button class="action-button" id="unlog-button">UnLog Person</button>
+        <label id="logger-result">logged: XXXXXXXXXXXxxxxxxxxxx</label>
+      </div>
+
+      <br class="action-separator"/>
+
+      <div id="set-status-wrapper">
+        <button class="action-button" id="clear-status-button">Clear Status</button>
+        <button class="action-button" id="accept-status-button">Set Accepted</button>
+        <button class="action-button" id="declined-status-button">Set Declined</button>
+        <label id="logger-result">logged: XXXXXXXXXXXxxxxxxxxxx</label>
+      </div>
+
+    </div>
   </body>
 </html>
