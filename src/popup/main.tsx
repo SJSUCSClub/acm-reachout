@@ -20,6 +20,8 @@ const acceptStatusButton = document.getElementById("accept-status-button") as HT
 const declinedStatusButton = document.getElementById("declined-status-button") as HTMLButtonElement
 const clearStatusButton = document.getElementById("clear-status-button") as HTMLButtonElement
 
+const profileNameHtmlClass : string = "_47a1d4cc _22de244d _334cbe1d e8982028 _260a3582 _4111d72c _076e230d _480391c7 ea8a7378 _24c66435 ad53e877"
+
 function setStatus(text: string) {
   statusEl.textContent = text
 }
@@ -125,7 +127,6 @@ loggerButton?.addEventListener("click", async () => {
 
 
   //Getting Profile Name
-  const profileNameHtmlClass : string = "c9d8c8f6 _15265fb1 _454952c6 f212399d _53419e92 _43820a1c e29a707d _654321ed e9d12b7c _72b02528 a5c0828b"
   const nameFinderResult = await chrome.scripting.executeScript({
     target: { tabId: activeTab.id as number },
     func: (className: string) => {
@@ -161,7 +162,6 @@ unlogButton?.addEventListener("click", async () => {
   const activeTab = tab[0];
 
     //Getting Profile Name
-  const profileNameHtmlClass : string = "c9d8c8f6 _15265fb1 _454952c6 f212399d _53419e92 _43820a1c e29a707d _654321ed e9d12b7c _72b02528 a5c0828b"
   const nameFinderResult = await chrome.scripting.executeScript({
     target: { tabId: activeTab.id as number },
     func: (className: string) => {
