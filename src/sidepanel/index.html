@@ -3,8 +3,34 @@
   <head>
     <meta charset="UTF-8" />
   </head>
-  <body>
+  <body id="body">
     <div id="root"></div>
     <script type="module" src="./main.tsx"></script>
+
+    <button id="login-dropdown-button" class="dropdown-button">Connection</button>
+    <div id="login-display-wrapper" class="dropdown-display">
+      <label class="login-needed-label">Please</label>
+      <label class="login-needed-label">Log-in</label>
+      <img id="spartan-img" src="../assets/chubby-spartan-acm.png" alt="Chubby Spartan on ACM Laptop" width="100" />
+      <div id="connection-status">Checking...</div>
+      <button id="connectBtn">Connect Google</button>
+      <button id="disconnectBtn">Disconnect</button>
+    </div>
+
+    <button id="logger-dropdown-button" class="dropdown-button">Logger</button>
+    <div id="logger-display-wrapper" class="dropdown-display">
+        <button class="action-button" id="logger-button">Log Person</button>
+        <button class="action-button" id="unlog-button">UnLog Person</button>
+        <label id="logger-result"></label>
+    </div>
+
+    <button id="status-dropdown-button" class="dropdown-button">Set Status</button> 
+    <div id="status-display-wrapper" class="dropdown-display">
+      <button class="action-button" id="accept-status-button">Set Accepted</button>
+      <button class="action-button" id="declined-status-button">Set Declined</button>
+      <button class="action-button" id="clear-status-button">Clear Status</button>
+      <label id="status-result"></label>
+    </div>
+
   </body>
 </html>
