@@ -1,3 +1,4 @@
+import { link } from 'fs'
 import './index.css'
 
 const loginPageBtn = document.getElementById("login-page") as HTMLButtonElement
@@ -19,8 +20,6 @@ const setStatusWrapper = document.getElementById("set-status-wrapper") as HTMLDi
 const acceptStatusButton = document.getElementById("accept-status-button") as HTMLButtonElement
 const declinedStatusButton = document.getElementById("declined-status-button") as HTMLButtonElement
 const clearStatusButton = document.getElementById("clear-status-button") as HTMLButtonElement
-
-const profileNameHtmlClass : string = "_47a1d4cc _22de244d _334cbe1d e8982028 _260a3582 _4111d72c _076e230d _480391c7 ea8a7378 _24c66435 ad53e877"
 
 function setStatus(text: string) {
   statusEl.textContent = text
@@ -129,11 +128,10 @@ loggerButton?.addEventListener("click", async () => {
   //Getting Profile Name
   const nameFinderResult = await chrome.scripting.executeScript({
     target: { tabId: activeTab.id as number },
-    func: (className: string) => {
-      const element = document.getElementsByClassName(className)[0] as HTMLElement | undefined;
+    func: () => {
+      const element = document.querySelectorAll('h2')[1] as HTMLElement | undefined;
       return element ? element.innerText : "Profile Name HTML element not found";
-    },
-    args: [profileNameHtmlClass]
+    }
   });
 
   const profileName = nameFinderResult[0]?.result ?? "Profile Name HTML element not found" ; //Name of the LinkedIn profile owner
@@ -160,15 +158,29 @@ loggerButton?.addEventListener("click", async () => {
 unlogButton?.addEventListener("click", async () => {
   const tab = await chrome.tabs.query({ active: true, currentWindow: true });
   const activeTab = tab[0];
+  const currentUrl = activeTab.url;
 
-    //Getting Profile Name
+  //Check if URL is a LinkedIn profile page
+  if (currentUrl == null) {
+    loggerResult.textContent = "Error: No active tab URL";
+    loggerResult.style.display = "flex";
+    return
+  }
+  else if (currentUrl.startsWith("https://www.linkedin.com/in/") || currentUrl.startsWith("linkedin.com/in/")) {
+  }
+  else {
+    loggerResult.textContent = "Error: Not a LinkedIn profile page";
+    loggerResult.style.display = "flex";
+    return
+  }
+
+  //Getting Profile Name
   const nameFinderResult = await chrome.scripting.executeScript({
     target: { tabId: activeTab.id as number },
-    func: (className: string) => {
-      const element = document.getElementsByClassName(className)[0] as HTMLElement | undefined;
+    func: () => {
+      const element = document.querySelectorAll('h2')[1] as HTMLElement | undefined;
       return element ? element.innerText : "Profile Name HTML element not found";
-    },
-    args: [profileNameHtmlClass]
+    }
   });
 
   const profileName = nameFinderResult[0]?.result ?? "Error: Profile Name HTML element not found" ;
@@ -179,8 +191,9 @@ unlogButton?.addEventListener("click", async () => {
   }
 
   const logResult = await chrome.runtime.sendMessage({
-    type: "SHEETS_DELETE_ROW_WITH_NAME",
+    type: "SHEETS_DELETE_ROW",
     name: profileName,
+    link: currentUrl,
   })
 
   if (!logResult?.ok) {
