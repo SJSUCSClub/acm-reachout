@@ -6,7 +6,7 @@ const loginDisplayWrapper = document.getElementById("login-display-wrapper") as 
 
 const connectBtn = document.getElementById("connectBtn") as HTMLButtonElement
 const disconnectBtn = document.getElementById("disconnectBtn") as HTMLButtonElement
-const statusEl = document.getElementById("status") as HTMLDivElement
+const connectionStatus = document.getElementById("status") as HTMLDivElement
 
 const actionDisplayWrapper = document.getElementById("action-display-wrapper") as HTMLDivElement
 const loginNeededLabels = document.getElementsByClassName("login-needed-label") as HTMLCollectionOf<HTMLLabelElement>
@@ -23,7 +23,7 @@ const clearStatusButton = document.getElementById("clear-status-button") as HTML
 const statusResult = document.getElementById("status-result") as HTMLLabelElement
 
 function setConnStatus(text: string) {
-  statusEl.textContent = text
+  connectionStatus.textContent = text
 }
 
 function setStatusResult(text: string) {
