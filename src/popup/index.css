@@ -185,7 +185,10 @@ button:focus-visible {
 #clear-status-button {
   color: lightgray;
 }
-
+#status-result {
+  display: none;
+  max-width: 160px;
+}
 
 .card {
   padding: 2em;
