@@ -259,6 +259,67 @@ export async function searchForProfile(name: string, link: string): Promise<numb
 
 }
 
+
+export async function setStatusForProfile(name: string, link: string, status: string) {
+
+  const row = await searchForProfile(name, link);
+  if (row === -1) {
+    throw new Error(`Profile "${name}" not found`);
+  }
+
+  const spreadsheetId = await getSpreadsheetId() as string | undefined;
+  if (!spreadsheetId) {
+    throw new Error("Missing spreadsheetId");
+  }
+
+  await apiFetch(
+    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${SHEET_TITLE}!E${row}`)}?valueInputOption=USER_ENTERED`,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        values: [[status]],
+      }),
+    }
+  );
+
+  await apiFetch(
+    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${SHEET_TITLE}!D${row}`)}?valueInputOption=USER_ENTERED`,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        values: [["=NOW()"]],
+      }),
+    }
+  );
+
+  return
+
+}
+
+async function getStatusForProfile(name: string, link: string): Promise<{ status: string | null, time: string | null }> {
+  await checkAPIConnection();
+
+  const row = await searchForProfile(name, link);
+  if (row === -1) {
+    throw new Error(`Profile "${name}" not found`);
+  }
+
+  const spreadsheetId = await getSpreadsheetId() as string | undefined;
+  if (!spreadsheetId) {
+    throw new Error("Missing spreadsheetId");
+  }
+
+  const status = await apiFetch(
+    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${SHEET_TITLE}!E${row}`)}`
+  );
+  const time = await apiFetch(
+    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${SHEET_TITLE}!D${row}`)}`
+  );
+
+  return { status: status.values?.[0]?.[0] || null, time: time.values?.[0]?.[0] || null };
+
+}
+
 async function setConnectedBadge() {
   await chrome.action.setBadgeText({ text: "ON" });
   await chrome.action.setBadgeBackgroundColor({ color: [22, 163, 74, 255] });
@@ -328,6 +389,41 @@ export async function checkGoogleConnection() {
   }
 }
 
+async function getProfileLinkFromRedirectUrl(startUrl: string): Promise<string> {
+  if (typeof startUrl !== "string" || !/^https?:\/\//i.test(startUrl)) {
+    throw new Error("Invalid URL");
+  }
+
+  const res = await fetch(startUrl, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+
+  const html = await res.text();
+
+  const direct = html.match(/https:\/\/www\.linkedin\.com\/in\/[A-Za-z0-9-_%]+\/?/i);
+  if (direct?.[0] && !/\/in\/ACo/i.test(direct[0])) {
+    return direct[0];
+  }
+
+  const publicIdentifier = html.match(/"publicIdentifier":"([^"]+)"/);
+  if (publicIdentifier?.[1]) {
+    return `https://www.linkedin.com/in/${publicIdentifier[1]}/`;
+  }
+
+  const vanityName = html.match(/"vanityName":"([^"]+)"/);
+  if (vanityName?.[1]) {
+    return `https://www.linkedin.com/in/${vanityName[1]}/`;
+  }
+
+  throw new Error("Could not extract profile link from URL");
+}
+
+
 chrome.runtime.onInstalled.addListener(async () => {
   await clearConnectedBadge();
 });
@@ -354,6 +450,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "GET_REDIRECT_URL") {
+    getProfileLinkFromRedirectUrl(message.url)
+      .then((finalUrl) => sendResponse({ ok: true, finalUrl }))
+      .catch((error) =>
+        sendResponse({
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      );
+
+    return true;
+  }
+
+
   if (message.type === "SHEETS_SETUP") {
     setUp().then(() => sendResponse({ ok: true })).catch((error) => {
       sendResponse({ ok: false, error: String(error) });
@@ -368,18 +478,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-    if (message.type === "SHEETS_DELETE_ROW") {
-      searchForProfile(message.name, message.link)
-      .then((row) => {
-        if (row === -1) {
-          let notFoundError = new Error(`Profile "${message.name}" not found`);
-          sendResponse({ ok: false, error: String(notFoundError) });
-          return;
-        }
-        deleteSingleRow(row)
-          .then(() => sendResponse({ ok: true }))
-          .catch((error) => sendResponse({ ok: false, error: String(error) }));
-      });
+  if (message.type === "SHEETS_DELETE_ROW") {
+    searchForProfile(message.name, message.link)
+    .then((row) => {
+      if (row === -1) {
+        let notFoundError = new Error(`Profile "${message.name}" not found`);
+        sendResponse({ ok: false, error: String(notFoundError) });
+        return;
+      }
+      deleteSingleRow(row)
+        .then(() => sendResponse({ ok: true }))
+        .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    });
     return true;
   }
 
@@ -400,6 +510,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "SHEETS_SEARCH_PROFILE") {
     searchForProfile(message.name, message.link)
       .then((row) => sendResponse({ ok: true, row }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message.type === "SHEETS_SET_STATUS") {
+    setStatusForProfile(message.name, message.link, message.status)
+      .then(() => sendResponse({ ok: true }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message.type === "SHEETS_GET_STATUS") {
+    getStatusForProfile(message.name, message.link)
+      .then(({ status, time }) => sendResponse({ ok: true, status, time }))
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }

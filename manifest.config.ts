@@ -30,7 +30,8 @@ export default defineManifest({
   ],
   host_permissions: [
     "https://sheets.googleapis.com/*",
-    "https://www.googleapis.com/*"
+    "https://www.googleapis.com/*",
+    "https://www.linkedin.com/*"
   ],
   oauth2: {
     client_id: '444274203752-bdfba1da41ll96mbrhqob366l85io6k5.apps.googleusercontent.com',    //prob need to change this for production
