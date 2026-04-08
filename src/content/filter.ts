@@ -69,27 +69,3 @@ cards.forEach((card) => {
 //         !isNotGraduated(card)
 //     )
 // }
-
-// function filterCards(): void {
-//     const cards = document.querySelectorAll("li.reusable-search__result-container")          // "list item" HTML tag --> selects all <li> elements 
-
-//     cards.forEach((card) => {
-//         const el = card as HTMLElement                          // casts card to HTMLElement to access style property
-//         el.style.display = matchesFilter(card) ? "" : "none"    // if card matches filter, then ""(show it) else "none"(hide it)
-//     })
-//     }
-
-//     function startFiltering() : void {
-//         filterCards()                                           // starts filtering the cards                    
-
-//         const observer = new MutationObserver(() => {           // this creates a watcher to run the filter again if a page change is observed (i.e. when scrolling)
-//             filterCards()
-//         })
-
-//         observer.observe(document.body, { 
-//             childList: true,            // checks for new elements
-//             subtree: true               // watches what is inside the page
-//         })
-//     }
-
-//     startFiltering()
