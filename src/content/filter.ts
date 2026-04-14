@@ -1,5 +1,6 @@
 console.log("FILTER FILE LOADED")   // --> this is just to check if the filter file is being loaded, can be removed later
 
+let filterEnabled = false
 
 function getText(el : Element | null) : string {    // this reads the text of the element if it exists, or uses "" if its null, 
     return (el?.textContent || "").toLowerCase().trim()    // and converts it to lowercase for easier searching
@@ -24,6 +25,8 @@ function isNotGraduated(card: Element) : boolean {
     text.includes("@ sjsu") ||
     text.includes("@ san jose state") ||
     text.includes("@san jose state") ||
+    text.includes("@san josé state university") ||
+    text.includes("@ san josé state university") ||
     text.includes("@sjsu") ||
     hasFutureGrad
    )
@@ -44,22 +47,52 @@ function isAlumni(card: Element) : boolean {
     )
 }
 
-const cards = Array.from(document.querySelectorAll('[role="listitem"]')) as HTMLElement[]
+function applyFilter(enabled: boolean) {
+    filterEnabled = enabled
 
-cards.forEach((card) => {
-  const hasProfileLink = !!card.querySelector('a[href*="/in/"]')
-  if (!hasProfileLink) return
+    const cards = Array.from(document.querySelectorAll('[role="listitem"]')) as HTMLElement[]
 
-  const keep = isAlumni(card) || !isNotGraduated(card)
+    cards.forEach((card) => {
+        const hasProfileLink = !!card.querySelector('a[href*="/in/"]')
+        if (!hasProfileLink) return
 
-  card.style.display = keep ? "" : "none"
+        if (!enabled) {
+        card.style.display = ""
+        return
+        }
 
-  console.log({
-    text: getText(card),
-    alumni: isAlumni(card),
-    notGraduated: isNotGraduated(card),
-    keep
-  })
+        const keep = isAlumni(card) || !isNotGraduated(card)
+        card.style.display = keep ? "" : "none"
+
+        console.log({
+            text: getText(card),
+            alumni: isAlumni(card),
+            notGraduated: isNotGraduated(card),
+            keep
+        })
+    })
+}
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === "TOGGLE_LINKEDIN_FILTER") {
+    applyFilter(Boolean(message.enabled))
+    sendResponse({ ok: true })
+  }
+
+  if (message?.type === "GET_LINKEDIN_FILTER_STATE") {
+    sendResponse({ ok: true, enabled: filterEnabled })
+  }
+})
+
+const observer = new MutationObserver(() => {
+  if (filterEnabled) {
+    applyFilter(true)
+  }
+})
+
+observer.observe(document.body, {
+  childList: true,
+  subtree: true,
 })
 
 

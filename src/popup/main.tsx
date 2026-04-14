@@ -15,6 +15,8 @@ const loggerWrapper = document.getElementById("logger-wrapper") as HTMLDivElemen
 const loggerButton = document.getElementById("logger-button") as HTMLButtonElement
 const unlogButton = document.getElementById("unlog-button") as HTMLButtonElement
 const loggerResult = document.getElementById("logger-result") as HTMLLabelElement
+const toggleFilterButton = document.getElementById("toggle-filter-button") as HTMLButtonElement
+const filterStatusLabel = document.getElementById("filter-status-label") as HTMLLabelElement
 
 const setStatusWrapper = document.getElementById("set-status-wrapper") as HTMLDivElement
 const acceptStatusButton = document.getElementById("accept-status-button") as HTMLButtonElement
@@ -43,6 +45,51 @@ function setLoggerResult(text: string) {
 function clearLoggerResult() {
   loggerResult.style.display = "none";
 }
+
+async function getActiveTabId(): Promise<number | null> {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+  return tabs[0]?.id ?? null
+}
+
+async function sendFilterToggle(enabled: boolean) {
+  const tabId = await getActiveTabId()
+  if (!tabId) {
+    filterStatusLabel.textContent = "No active tab"
+    return
+  }
+
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, {
+      type: "TOGGLE_LINKEDIN_FILTER",
+      enabled,
+    })
+
+    if (response?.ok) {
+      filterStatusLabel.textContent = enabled ? "Grad Filter On" : "Grad Filter Off"
+      toggleFilterButton.textContent = enabled ? "Turn Grad Filter Off" : "Turn Grad Filter On"
+      await chrome.storage.local.set({ linkedinFilterEnabled: enabled })
+    } else {
+      filterStatusLabel.textContent = "Grad Filter toggle failed"
+    }
+  } catch {
+    filterStatusLabel.textContent = "Open a LinkedIn page first"
+  }
+}
+
+toggleFilterButton?.addEventListener("click", async () => {
+  const { linkedinFilterEnabled } = await chrome.storage.local.get("linkedinFilterEnabled")
+  const nextEnabled = !linkedinFilterEnabled
+  await sendFilterToggle(nextEnabled)
+})
+
+async function refreshFilterUI() {
+  const { linkedinFilterEnabled } = await chrome.storage.local.get("linkedinFilterEnabled")
+  const enabled = Boolean(linkedinFilterEnabled)
+
+  filterStatusLabel.textContent = enabled ? "Grad Filter On" : "Grad Filter Off"
+  toggleFilterButton.textContent = enabled ? "Turn Grad Filter Off" : "Turn Grad Filter On"
+}
+
 
 async function refreshStatus() {
   const { googleConnected } = await chrome.storage.local.get("googleConnected")
@@ -330,3 +377,4 @@ clearStatusButton?.addEventListener("click", async () => {
 
 
 refreshStatus()
+refreshFilterUI()
