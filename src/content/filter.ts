@@ -50,7 +50,7 @@ cards.forEach((card) => {
   const hasProfileLink = !!card.querySelector('a[href*="/in/"]')
   if (!hasProfileLink) return
 
-  const keep = isAlumni(card) || !isNotGraduated(card)
+  const keep = isAlumni(card) && !isNotGraduated(card)
 
   card.style.display = keep ? "" : "none"
 
