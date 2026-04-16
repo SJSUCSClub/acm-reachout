@@ -1,5 +1,9 @@
 let connectedToken: string | null = null;
 
+let filterStatus_filter_out_students: boolean = false;
+let filterStatus_require_alumni: boolean = false;
+let filterStatus_mark_logged: boolean = false;
+
 const SHEET_TITLE = "Sheet1";
 
 async function getAccessToken(interactive = false): Promise<string> {
@@ -428,6 +432,44 @@ chrome.runtime.onInstalled.addListener(async () => {
   await clearConnectedBadge();
 });
 
+function applyToTab(tabId: number) {
+  chrome.tabs.sendMessage(tabId, { type: "APPLY_FILTER1" }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.warn("No receiver:", chrome.runtime.lastError.message);
+      return;
+    }
+    console.log("Applied:", response);
+  });
+}
+
+// Full load / refresh
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === "complete") {
+    setTimeout(() => {
+      try {
+        applyToTab(tabId);
+      } catch (err) {
+      }
+    }, 1500);
+
+    return true;
+  }
+});
+
+// SPA URL changes like ?foo=bar without full reload
+chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
+  if (details.frameId === 0) {
+    setTimeout(() => {
+      try {
+        applyToTab(details.tabId);
+      } catch (err) {
+      }
+    }, 1500);
+
+    return true;
+  }
+});
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "GOOGLE_CONNECT") {
     connectGoogle().then(sendResponse).catch((error) => {
@@ -462,7 +504,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     return true;
   }
-
 
   if (message.type === "SHEETS_SETUP") {
     setUp().then(() => sendResponse({ ok: true })).catch((error) => {
@@ -509,7 +550,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message.type === "SHEETS_SEARCH_PROFILE") {
     searchForProfile(message.name, message.link)
-      .then((row) => sendResponse({ ok: true, row }))
+      .then((row) => sendResponse({ ok: true, row: row }))
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }
@@ -528,5 +569,31 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "UPDATE_FILTER_STATUS") {
+    if (typeof message.filter_out_students === "boolean") {
+      filterStatus_filter_out_students = message.filter_out_students;
+    }
+
+    if (typeof message.require_alumni === "boolean") {
+      filterStatus_require_alumni = message.require_alumni;
+    }
+
+    if (typeof message.mark_logged === "boolean") {
+      filterStatus_mark_logged = message.mark_logged;
+    }
+
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (message.type === "GET_FILTER_STATUS") {
+    sendResponse({
+      ok: true,
+      filter_out_students: filterStatus_filter_out_students,
+      require_alumni: filterStatus_require_alumni,
+      mark_logged: filterStatus_mark_logged,
+    });
+    return true;
+  }
 
 });

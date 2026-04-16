@@ -2,6 +2,7 @@ import './index.css'
 
 const loginPageBtn = document.getElementById("login-page") as HTMLButtonElement
 const actionPageBtn = document.getElementById("action-page") as HTMLButtonElement
+const filterPageBtn = document.getElementById("filter-page") as HTMLButtonElement
 const loginDisplayWrapper = document.getElementById("login-display-wrapper") as HTMLDivElement
 
 const connectBtn = document.getElementById("connectBtn") as HTMLButtonElement
@@ -14,15 +15,21 @@ const loginNeededLabels = document.getElementsByClassName("login-needed-label") 
 const loggerWrapper = document.getElementById("logger-wrapper") as HTMLDivElement
 const loggerButton = document.getElementById("logger-button") as HTMLButtonElement
 const unlogButton = document.getElementById("unlog-button") as HTMLButtonElement
-const loggerResult = document.getElementById("logger-result") as HTMLLabelElement
+const loggerResult = document.getElementById("logger-result") as HTMLLabelElement/* 
 const toggleFilterButton = document.getElementById("toggle-filter-button") as HTMLButtonElement
-const filterStatusLabel = document.getElementById("filter-status-label") as HTMLLabelElement
+const filterStatusLabel = document.getElementById("filter-status-label") as HTMLLabelElement */
 
 const setStatusWrapper = document.getElementById("set-status-wrapper") as HTMLDivElement
 const acceptStatusButton = document.getElementById("accept-status-button") as HTMLButtonElement
 const declinedStatusButton = document.getElementById("declined-status-button") as HTMLButtonElement
 const clearStatusButton = document.getElementById("clear-status-button") as HTMLButtonElement
 const statusResult = document.getElementById("status-result") as HTMLLabelElement
+
+const filterDisplayWrapper = document.getElementById("filter-display-wrapper") as HTMLDivElement
+const filterStudentsCheckbox = document.getElementById("filter-out-students-checkbox") as HTMLInputElement
+const requireAlumniCheckbox = document.getElementById("require-alumni-checkbox") as HTMLInputElement
+const markLoggedCheckbox = document.getElementById("mark-logged-checkbox") as HTMLInputElement
+const filterResult = document.getElementById("filter-result") as HTMLLabelElement;
 
 function setConnStatus(text: string) {
   connectionStatus.textContent = text
@@ -46,12 +53,21 @@ function clearLoggerResult() {
   loggerResult.style.display = "none";
 }
 
+function setFilterResult(text: string) {
+  filterResult.textContent = text;
+  filterResult.style.display = "block";
+}
+
+function clearFilterResult() {
+  filterResult.style.display = "none";
+}
+
 async function getActiveTabId(): Promise<number | null> {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
   return tabs[0]?.id ?? null
 }
 
-async function sendFilterToggle(enabled: boolean) {
+/* async function sendFilterToggle(enabled: boolean) {
   const tabId = await getActiveTabId()
   if (!tabId) {
     filterStatusLabel.textContent = "No active tab"
@@ -88,12 +104,86 @@ async function refreshFilterUI() {
 
   filterStatusLabel.textContent = enabled ? "Grad Filter On" : "Grad Filter Off"
   toggleFilterButton.textContent = enabled ? "Turn Grad Filter Off" : "Turn Grad Filter On"
+} */
+
+async function refreshFilterUI() {
+  const response = await chrome.runtime.sendMessage({ type: "GET_FILTER_STATUS" })
+
+  if (!response?.ok) {
+    filterStudentsCheckbox.checked = false;
+    requireAlumniCheckbox.checked = false;
+    markLoggedCheckbox.checked = false;
+    setFilterResult(`Error getting filter status: ${response?.error || "Unknown error"}`);
+    return;
+  }
+
+  filterStudentsCheckbox.checked = response.filter_out_students;
+  requireAlumniCheckbox.checked = response.require_alumni;
+  markLoggedCheckbox.checked = response.mark_logged;
+
 }
 
+async function updateFilterStatus() {
+  const filter_out_students = filterStudentsCheckbox.checked;
+  const require_alumni = requireAlumniCheckbox.checked;
+  const mark_logged = markLoggedCheckbox.checked;
+  const response = await chrome.runtime.sendMessage({ 
+    type: "UPDATE_FILTER_STATUS", 
+    filter_out_students: filter_out_students, 
+    require_alumni: require_alumni, 
+    mark_logged: mark_logged 
+  })
+  if (!response?.ok) {
+    setFilterResult(`Error updating filter status: ${response?.error || "Unknown error"}`);
+    return;
+  }
+
+  const tabId = await getActiveTabId()
+  if (!tabId) {
+    setFilterResult("No active tab to apply filter");
+    return;
+  }
+  chrome.tabs.sendMessage(tabId, { type: "APPLY_FILTER1" }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.warn("No receiving content script:", chrome.runtime.lastError.message);
+      return;
+    }
+    console.log("Filter applied:", response);
+  });
+}
+
+filterStudentsCheckbox?.addEventListener("change", async () => {
+  updateFilterStatus();
+})
+
+requireAlumniCheckbox?.addEventListener("change", async () => {
+  updateFilterStatus();
+})
+
+markLoggedCheckbox?.addEventListener("change", async () => {
+  updateFilterStatus();
+})
+
+
+
+
+async function hideLoginNeededLabels() {
+  for (let i = 0; i < loginNeededLabels.length; i++) {
+    loginNeededLabels[i].style.display = "none";
+  }
+}
+
+async function showLoginNeededLabels() {
+  for (let i = 0; i < loginNeededLabels.length; i++) {
+    loginNeededLabels[i].style.display = "block";
+  }
+}
 
 async function refreshStatus() {
-  const { googleConnected } = await chrome.storage.local.get("googleConnected")
-  if (googleConnected) {
+  const googleConnected = await chrome.runtime.sendMessage({
+    type: "GOOGLE_CHECK"
+  })
+  if (googleConnected.ok && googleConnected.connected) {
     setConnStatus("Connected");
     connectBtn.style.display = "none";
     disconnectBtn.style.display = "block";
@@ -105,9 +195,7 @@ async function refreshStatus() {
     loginPageBtn.disabled = false
     actionPageBtn.disabled = true
     actionPageBtn.style.backgroundColor = "#1a1a1a"
-    loginNeededLabels[0].style.display = "none"
-    loginNeededLabels[1].style.display = "none"
-    loginNeededLabels[2].style.display = "none"
+    await hideLoginNeededLabels();
     loggerWrapper.style.display = "flex"
     setStatusWrapper.style.display = "block"
   } else {
@@ -116,9 +204,7 @@ async function refreshStatus() {
     disconnectBtn.style.display = "none";
     await chrome.action.setBadgeText({ text: "OFF" })
     await chrome.action.setBadgeBackgroundColor({ color: [255, 0, 0, 255] })
-    loginNeededLabels[0].style.display = "block"
-    loginNeededLabels[1].style.display = "block"
-    loginNeededLabels[2].style.display = "block"
+    await showLoginNeededLabels();
     loggerWrapper.style.display = "none"
     setStatusWrapper.style.display = "none"
   }
@@ -160,18 +246,32 @@ disconnectBtn?.addEventListener("click", async () => {
 })
 
 loginPageBtn?.addEventListener("click", () => {
-  loginDisplayWrapper.style.display = "flex"
-  actionDisplayWrapper.style.display = "none"
-  loginPageBtn.disabled = true
-  actionPageBtn.disabled = false
+  loginDisplayWrapper.style.display = "flex";
+  actionDisplayWrapper.style.display = "none";
+  filterDisplayWrapper.style.display = "none";
+  loginPageBtn.disabled = true;
+  actionPageBtn.disabled = false;
+  filterPageBtn.disabled = false;
 })
 
 actionPageBtn?.addEventListener("click", () => {
   loginDisplayWrapper.style.display = "none"
   actionDisplayWrapper.style.display = "flex"
+  filterDisplayWrapper.style.display = "none"
   loginPageBtn.disabled = false
   actionPageBtn.disabled = true
+  filterPageBtn.disabled = false;
 })
+
+filterPageBtn?.addEventListener("click", () => {
+  loginDisplayWrapper.style.display = "none"
+  actionDisplayWrapper.style.display = "none"
+  filterDisplayWrapper.style.display = "flex"
+  loginPageBtn.disabled = false;
+  actionPageBtn.disabled = false;
+  filterPageBtn.disabled = true;
+})
+
 
 async function profileNameFinder(activeTabId: number): Promise<string>{
   const result = await chrome.scripting.executeScript({

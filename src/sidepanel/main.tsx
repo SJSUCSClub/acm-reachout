@@ -21,6 +21,14 @@ const declinedStatusButton = document.getElementById("declined-status-button") a
 const clearStatusButton = document.getElementById("clear-status-button") as HTMLButtonElement
 const statusResult = document.getElementById("status-result") as HTMLLabelElement
 
+const filterDropdownBtn = document.getElementById("filter-dropdown-button") as HTMLButtonElement
+const filterDisplayWrapper = document.getElementById("filter-display-wrapper") as HTMLDivElement
+const filterStudentsCheckbox = document.getElementById("filter-out-students-checkbox") as HTMLInputElement
+const requireAlumniCheckbox = document.getElementById("require-alumni-checkbox") as HTMLInputElement
+const markLoggedCheckbox = document.getElementById("mark-logged-checkbox") as HTMLInputElement
+const filterResult = document.getElementById("filter-result") as HTMLLabelElement
+
+
 function setConnStatus(text: string) {
   connectionStatus.textContent = text
 }
@@ -42,6 +50,84 @@ function setLoggerResult(text: string) {
 function clearLoggerResult() {
   loggerResult.style.display = "none";
 }
+
+function setFilterResult(text: string) {
+  filterResult.textContent = text;
+  filterResult.style.display = "block";
+}
+
+function clearFilterResult() {
+  filterResult.style.display = "none";
+}
+
+
+async function refreshFilterUI() {
+  const response = await chrome.runtime.sendMessage({ type: "GET_FILTER_STATUS" })
+
+  if (!response?.ok) {
+    filterStudentsCheckbox.checked = false;
+    requireAlumniCheckbox.checked = false;
+    markLoggedCheckbox.checked = false;
+    setFilterResult(`Error getting filter status: ${response?.error || "Unknown error"}`);
+    return;
+  }
+
+  filterStudentsCheckbox.checked = response.filter_out_students;
+  requireAlumniCheckbox.checked = response.require_alumni;
+  markLoggedCheckbox.checked = response.mark_logged;
+
+}
+
+
+async function getActiveTabId(): Promise<number | null> {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+  return tabs[0]?.id ?? null
+}
+
+
+async function updateFilterStatus() {
+  const filter_out_students = filterStudentsCheckbox.checked;
+  const require_alumni = requireAlumniCheckbox.checked;
+  const mark_logged = markLoggedCheckbox.checked;
+  const response = await chrome.runtime.sendMessage({ 
+    type: "UPDATE_FILTER_STATUS", 
+    filter_out_students: filter_out_students, 
+    require_alumni: require_alumni, 
+    mark_logged: mark_logged 
+  })
+  if (!response?.ok) {
+    setFilterResult(`Error updating filter status: ${response?.error || "Unknown error"}`);
+    return;
+  }
+
+  const tabId = await getActiveTabId()
+  if (!tabId) {
+    setFilterResult("No active tab to apply filter");
+    return;
+  }
+  chrome.tabs.sendMessage(tabId, { type: "APPLY_FILTER1" }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.warn("No receiving content script:", chrome.runtime.lastError.message);
+      return;
+    }
+    console.log("Filter applied:", response);
+  });
+}
+
+filterStudentsCheckbox?.addEventListener("change", async () => {
+  updateFilterStatus();
+})
+
+requireAlumniCheckbox?.addEventListener("change", async () => {
+  updateFilterStatus();
+})
+
+markLoggedCheckbox?.addEventListener("change", async () => {
+  updateFilterStatus();
+})
+
+
+
 
 loginDropdownBtn?.addEventListener("click", () => {
   if (loginDisplayWrapper.style.display === "none") {
@@ -75,6 +161,23 @@ function hideLoggerDisplay() {
   loggerDropdownBtn.style.borderRadius = "8px 8px 8px 8px"
 }
 
+filterDropdownBtn?.addEventListener("click", () => {
+  if (filterDisplayWrapper.style.display === "none" && connectionStatus.textContent === "Connected") {
+    showFilterDisplay();
+  } else {
+    hideFilterDisplay();
+  }
+})
+
+function showFilterDisplay() {
+  filterDisplayWrapper.style.display = "flex"
+  filterDropdownBtn.style.borderRadius = "8px 8px 0px 0px"
+}
+function hideFilterDisplay() {
+  filterDisplayWrapper.style.display = "none";
+  filterDropdownBtn.style.borderRadius = "8px 8px 8px 8px"
+}
+
 
 statusDropdownBtn?.addEventListener("click", () => {
   if (statusDisplayWrapper.style.display === "none" && connectionStatus.textContent === "Connected") {
@@ -94,8 +197,10 @@ function hideStatusDisplay() {
 
 
 async function refreshStatus() {
-  const { googleConnected } = await chrome.storage.local.get("googleConnected")
-  if (googleConnected) {
+  const googleConnected = await chrome.runtime.sendMessage({
+    type: "GOOGLE_CHECK"
+  })
+  if (googleConnected.ok && googleConnected.connected) {
     connectionStatus.textContent = "Connected";
     connectBtn.style.display = "none";
     disconnectBtn.style.display = "block";
@@ -359,3 +464,4 @@ clearStatusButton?.addEventListener("click", async () => {
 })
 
 refreshStatus()
+refreshFilterUI()
