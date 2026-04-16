@@ -179,7 +179,7 @@ async function showLoginNeededLabels() {
   }
 }
 
-async function refreshStatus() {
+async function refreshConnectionStatus() {
   const googleConnected = await chrome.runtime.sendMessage({
     type: "GOOGLE_CHECK"
   })
@@ -225,7 +225,7 @@ connectBtn?.addEventListener("click", async () => {
   } else {
     setConnStatus(`Failed: ${response?.error || "Unknown error"}`)
   }
-  refreshStatus();
+  refreshConnectionStatus();
 })
 
 disconnectBtn?.addEventListener("click", async () => {
@@ -242,7 +242,7 @@ disconnectBtn?.addEventListener("click", async () => {
   } else {
     setConnStatus(`Failed: ${response?.error || "Unknown error"}`)
   }
-  refreshStatus();
+  refreshConnectionStatus();
 })
 
 loginPageBtn?.addEventListener("click", () => {
@@ -416,12 +416,12 @@ async function MessengerProfileFinder(activeTabId: number):  Promise<{url: strin
   const result = await chrome.scripting.executeScript({
     target: { tabId: activeTabId },
     func: async () => {
-      const element = document.getElementsByClassName('msg-thread__link-to-profile')[0] as HTMLElement | undefined;
+      const element = document.getElementsByClassName('shared-title-bar')[0] as HTMLElement | undefined;
       if (!element) {
         throw new Error("Messenger Profile Card HTML element not found");
       }
 
-      let profileURL = element.getAttribute('href');
+      let profileURL = element.querySelector('a')?.getAttribute('href');
       if (!profileURL) {
         throw new Error("Profile URL not found in Messenger Profile Card");
       }
@@ -434,12 +434,10 @@ async function MessengerProfileFinder(activeTabId: number):  Promise<{url: strin
       }
       profileURL = response.finalUrl as string;
 
-      let profileName = element.getAttribute('title');
+      let profileName = element.querySelector('h2')?.innerText;
       if (!profileName) {
         throw new Error("Profile Name not found in Messenger Profile Card");
       }
-      profileName = profileName.replace("Open ", "").trim();
-      profileName = profileName.substring(0, profileName.length - "'s Profile".length).trim();
 
       return { url: profileURL, name: profileName };
     }
@@ -476,5 +474,5 @@ clearStatusButton?.addEventListener("click", async () => {
 })
 
 
-refreshStatus()
+refreshConnectionStatus()
 refreshFilterUI()
