@@ -366,7 +366,7 @@ async function changeStatus(newStatus: string) {
 
   const tab = await chrome.tabs.query({ active: true, currentWindow: true });
   const activeTab = tab[0];
-  if (activeTab.url == null || (!activeTab.url.startsWith("https://www.linkedin.com/messaging/thread"))) {
+  if (activeTab.url == null || !activeTab.url.includes("linkedin.com/messaging")) {
     setStatusResult("Error: No active tab URL or not a LinkedIn messaging thread page");
     return
   }
@@ -389,6 +389,12 @@ async function changeStatus(newStatus: string) {
   if (!logResult?.ok) {
     setStatusResult(`${logResult?.error || "Error setting status: Unknown error"}`);
     return
+  }
+
+  if (activeTab.id != null) {
+    chrome.tabs.sendMessage(activeTab.id, { type: "APPLY_FILTER1" }, () => {
+      if (chrome.runtime.lastError) { /* content script may not be ready */ }
+    });
   }
 
   if (newStatus === "") {
