@@ -253,6 +253,15 @@ export async function searchForProfile(name: string, link: string): Promise<numb
   );
   const linkValues: string[][] = linkColumn.values || [];
 
+  if(link === "") { //if no link provided, match by name only (for messaging thread)
+    for (let i = 0; i < nameValues.length; i++) { //match by name only if link missing (for messaging thread) 
+      const sheetName = nameValues[i]?.[0]?.trim() || ""; 
+      if (sheetName === name.trim()){ 
+        return i + 1; 
+      } 
+    }
+  }
+
   for (let i = 0; i < nameValues.length; i++) {
     if (nameValues[i]?.[0] === name && linkValues[i]?.[0] === link) {
       return i + 1;
@@ -322,6 +331,21 @@ async function getStatusForProfile(name: string, link: string): Promise<{ status
 
   return { status: status.values?.[0]?.[0] || null, time: time.values?.[0]?.[0] || null };
 
+}
+
+async function getAllProfileStatuses(): Promise<{name: string, status: string | null}[]> {
+  await checkAPIConnection();
+  const spreadsheetId = await getSpreadsheetId() as string;
+  
+  const data = await apiFetch(
+    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${SHEET_TITLE}!B:E`)}`
+  );
+  
+  const rows: string[][] = data.values || [];
+  return rows.slice(1).map(row => ({ // slice(1) skips header row
+    name: row[0]?.trim() || "",
+    status: row[3] || null  // E column is index 3 in B:E range
+  }));
 }
 
 async function setConnectedBadge() {
@@ -555,6 +579,25 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "SHEETS_SEARCH_PROFILE_STATUS") {
+    searchForProfile(message.name, message.link)
+      .then(async (row) => {
+        if (row === -1) {
+          sendResponse({ ok: true, row: -1, status: null });
+          return;
+        }
+        try {
+          const { status, time } = await getStatusForProfile(message.name, message.link);
+          sendResponse({ ok: true, row, status, time });
+        } catch (error) {
+          sendResponse({ ok: false, error: String(error) });
+        }
+      })
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+
   if (message.type === "SHEETS_SET_STATUS") {
     setStatusForProfile(message.name, message.link, message.status)
       .then(() => sendResponse({ ok: true }))
@@ -565,6 +608,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "SHEETS_GET_STATUS") {
     getStatusForProfile(message.name, message.link)
       .then(({ status, time }) => sendResponse({ ok: true, status, time }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message.type === "SHEETS_GET_ALL_STATUSES") {
+  getAllProfileStatuses()
+      .then((profiles) => sendResponse({ ok: true, profiles }))
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }
