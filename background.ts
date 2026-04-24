@@ -3,6 +3,7 @@ let connectedToken: string | null = null;
 let filterStatus_filter_out_students: boolean = false;
 let filterStatus_require_alumni: boolean = false;
 let filterStatus_mark_logged: boolean = false;
+let filterStatus_mark_status: boolean = false;
 
 const SHEET_TITLE = "Sheet1";
 
@@ -235,7 +236,7 @@ export async function getColumns(leftBound: string, rightBound: string): Promise
   return values;
 }
 
-export async function searchForProfile(name: string, link: string): Promise<number> {
+export async function searchForProfile(name: string, link?: string): Promise<number> {
   await checkAPIConnection();
 
   const spreadsheetId = await getSpreadsheetId() as string | undefined;
@@ -253,7 +254,7 @@ export async function searchForProfile(name: string, link: string): Promise<numb
   );
   const linkValues: string[][] = linkColumn.values || [];
 
-  if(link === "") { //if no link provided, match by name only (for messaging thread)
+  if(!link || link === "") { //if no link provided, match by name only (for messaging thread)
     for (let i = 0; i < nameValues.length; i++) { //match by name only if link missing (for messaging thread) 
       const sheetName = nameValues[i]?.[0]?.trim() || ""; 
       if (sheetName === name.trim()){ 
@@ -331,21 +332,6 @@ async function getStatusForProfile(name: string, link: string): Promise<{ status
 
   return { status: status.values?.[0]?.[0] || null, time: time.values?.[0]?.[0] || null };
 
-}
-
-async function getAllProfileStatuses(): Promise<{name: string, status: string | null}[]> {
-  await checkAPIConnection();
-  const spreadsheetId = await getSpreadsheetId() as string;
-  
-  const data = await apiFetch(
-    `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${SHEET_TITLE}!B:E`)}`
-  );
-  
-  const rows: string[][] = data.values || [];
-  return rows.slice(1).map(row => ({ // slice(1) skips header row
-    name: row[0]?.trim() || "",
-    status: row[3] || null  // E column is index 3 in B:E range
-  }));
 }
 
 async function setConnectedBadge() {
@@ -457,7 +443,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 function applyToTab(tabId: number) {
-  chrome.tabs.sendMessage(tabId, { type: "APPLY_FILTER1" }, (response) => {
+  chrome.tabs.sendMessage(tabId, { type: "APPLY_FILTER" }, (response) => {
     if (chrome.runtime.lastError) {
       console.warn("No receiver:", chrome.runtime.lastError.message);
       return;
@@ -612,13 +598,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === "SHEETS_GET_ALL_STATUSES") {
-  getAllProfileStatuses()
-      .then((profiles) => sendResponse({ ok: true, profiles }))
-      .catch((error) => sendResponse({ ok: false, error: String(error) }));
-    return true;
-  }
-
   if (message.type === "UPDATE_FILTER_STATUS") {
     if (typeof message.filter_out_students === "boolean") {
       filterStatus_filter_out_students = message.filter_out_students;
@@ -632,6 +611,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       filterStatus_mark_logged = message.mark_logged;
     }
 
+    if (typeof message.mark_status === "boolean") {
+      filterStatus_mark_status = message.mark_status;
+    }
+
     sendResponse({ ok: true });
     return true;
   }
@@ -642,6 +625,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       filter_out_students: filterStatus_filter_out_students,
       require_alumni: filterStatus_require_alumni,
       mark_logged: filterStatus_mark_logged,
+      mark_status: filterStatus_mark_status,
     });
     return true;
   }

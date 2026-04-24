@@ -92,19 +92,15 @@ async function applyStatusMarks() {
 
   if (cards.length === 0) return
 
-  // One single API call for all profiles
-  const response = await chrome.runtime.sendMessage({ type: "SHEETS_GET_ALL_STATUSES" })
-  if (!response?.ok) {
-    console.warn("Error fetching all statuses:", response?.error)
-    return
-  }
-
-  const profileMap = new Map<string, string | null>(
-    response.profiles.map((p: {name: string, status: string | null}) => [p.name.toLowerCase(), p.status])
-  )
-
+  const filterStatus = await chrome.runtime.sendMessage({ type: "GET_FILTER_STATUS" });
   for (const card of cards) {
-    card.querySelectorAll('.sheet-filter-dot').forEach(dot => dot.remove())
+
+    if (!filterStatus.mark_status) {
+      card.querySelectorAll('.sheet-filter-dot').forEach(dot => dot.remove());
+      continue;
+    };
+
+    if (card.querySelector('.sheet-filter-dot')) continue;
 
     const nameEl = card.querySelector('.truncate') as HTMLElement | null
     if (!nameEl) continue
@@ -112,11 +108,16 @@ async function applyStatusMarks() {
     const name = nameEl.textContent?.trim()
     if (!name) continue
 
-    if (!profileMap.has(name.toLowerCase())) continue // not in sheet
+    const apiQuery = await chrome.runtime.sendMessage({ 
+      type: "SHEETS_SEARCH_PROFILE_STATUS",
+      name: name,
+      link: "", 
+    })
 
-    const status = profileMap.get(name.toLowerCase())?.toUpperCase()
+    if (!apiQuery.ok) {
+      throw "GETTING STATUS ERROR: " + apiQuery.error;
+    }
 
-    if (status !== "ACCEPTED" && status !== "DECLINED") continue
 
     const dot = document.createElement('span')
     dot.className = 'sheet-filter-dot'
@@ -129,33 +130,36 @@ async function applyStatusMarks() {
       vertical-align: middle;
       flex-shrink: 0;
     `
-    dot.style.backgroundColor = status === "ACCEPTED" ? "#22c55e" : "#c30101"
-    dot.style.border = status === "ACCEPTED" ? "1.5px solid #16a34a" : "1.5px solid #991b1b"
+    const status = apiQuery.status;
+    const row = apiQuery.row;
+
+    if (row !== -1 && (status == null || status == "" || status == "CLEAR")) {
+      dot.style.backgroundColor = "#d3d028";
+      dot.style.border = "1.5px solid #c0b51d";
+    }
+    else if (status == "ACCEPTED") {
+      dot.style.backgroundColor = "#22c55e";
+      dot.style.border = "1.5px solid #16a34a";
+    }
+    else if (status == "DECLINED") {
+      dot.style.backgroundColor = "#c30101"
+      dot.style.border = "1.5px solid #991b1b"
+    }
+    else {
+      dot.style.backgroundColor = "#555555";
+      dot.style.border = "1.5px solid #4b4b4b";
+    }
+
 
     nameEl.insertAdjacentElement('afterend', dot)
   }
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === "APPLY_FILTER1") {
+  if (message?.type === "APPLY_FILTER") {
     applyMarks()
     applyStatusMarks()
     sendResponse({ ok: true })
     return true;
   }
 })
-
-function observeMessaging() {
-  const currentUrl = window.location.href;
-  if (!currentUrl.includes("linkedin.com/messaging")) return;
-
-  const target = document.querySelector('.msg-conversations-container') ?? document.body;
-
-  const observer = new MutationObserver(() => {
-    applyStatusMarks();
-  });
-
-  observer.observe(target, { childList: true, subtree: true });
-}
-
-observeMessaging();

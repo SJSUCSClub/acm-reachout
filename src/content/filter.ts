@@ -83,7 +83,7 @@ async function applyFilter() {
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === "APPLY_FILTER1") {
+  if (message?.type === "APPLY_FILTER") {
     applyFilter()
     sendResponse({ ok: true })
     return true;

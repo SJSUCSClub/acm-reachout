@@ -1,61 +1,71 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-  </head>
-  <body id="body">
-    <div id="root"></div>
-    <script type="module" src="./main.tsx"></script>
 
-    <button id="login-dropdown-button" class="dropdown-button">Connection</button>
-    <div id="login-display-wrapper" class="dropdown-display">
-      <label class="login-needed-label">Please</label>
-      <label class="login-needed-label">Log-in</label>
-      <img id="spartan-img" src="../assets/chubby-spartan-acm.png" alt="Chubby Spartan on ACM Laptop" width="100" />
-      <div id="connection-status">Checking...</div>
-      <button id="connectBtn">Connect Google</button>
-      <button id="disconnectBtn">Disconnect</button>
+<head>
+  <meta charset="UTF-8" />
+</head>
+
+<body id="body">
+  <div id="root"></div>
+  <script type="module" src="./main.tsx"></script>
+
+  <button id="login-dropdown-button" class="dropdown-button">Connection</button>
+  <div id="login-display-wrapper" class="dropdown-display">
+    <label class="login-needed-label">Please</label>
+    <label class="login-needed-label">Log-in</label>
+    <img id="spartan-img" src="../assets/chubby-spartan-acm.png" alt="Chubby Spartan on ACM Laptop" width="100" />
+    <div id="connection-status">Checking...</div>
+    <button id="connectBtn">Connect Google</button>
+    <button id="disconnectBtn">Disconnect</button>
+  </div>
+
+  <button id="logger-dropdown-button" class="dropdown-button">Logger</button>
+  <div id="logger-display-wrapper" class="dropdown-display">
+    <button class="action-button" id="logger-button">Log Person</button>
+    <button class="action-button" id="unlog-button">UnLog Person</button>
+    <label id="logger-result"></label>
+  </div>
+
+  <button id="status-dropdown-button" class="dropdown-button">Set Status</button>
+  <div id="status-display-wrapper" class="dropdown-display">
+    <button class="action-button" id="accept-status-button">Set Accepted</button>
+    <button class="action-button" id="declined-status-button">Set Declined</button>
+    <button class="action-button" id="clear-status-button">Clear Status</button>
+    <label id="status-result"></label>
+  </div>
+
+  <button id="filter-dropdown-button" class="dropdown-button">Filters</button>
+  <div id="filter-display-wrapper" class="dropdown-display">
+    <div id="filter-out-students-wrapper" class="filter-label-and-switch-wrapper">
+      <label id="filter-out-students-label">Remove Students</label>
+      <label class="switch" id="filter-out-students-switch">
+        <input type="checkbox" id="filter-out-students-checkbox">
+        <span class="slider round"></span>
+      </label>
     </div>
-
-    <button id="logger-dropdown-button" class="dropdown-button">Logger</button>
-    <div id="logger-display-wrapper" class="dropdown-display">
-        <button class="action-button" id="logger-button">Log Person</button>
-        <button class="action-button" id="unlog-button">UnLog Person</button>
-        <label id="logger-result"></label>
+    <div id="require-alumni-wrapper" class="filter-label-and-switch-wrapper">
+      <label id="require-alumni-label">Require Alumni/Grad</label>
+      <label class="switch" id="require-alumni-switch">
+        <input type="checkbox" id="require-alumni-checkbox">
+        <span class="slider round"></span>
+      </label>
     </div>
-
-    <button id="status-dropdown-button" class="dropdown-button">Set Status</button> 
-    <div id="status-display-wrapper" class="dropdown-display">
-      <button class="action-button" id="accept-status-button">Set Accepted</button>
-      <button class="action-button" id="declined-status-button">Set Declined</button>
-      <button class="action-button" id="clear-status-button">Clear Status</button>
-      <label id="status-result"></label>
+    <div id="mark-logged-wrapper" class="filter-label-and-switch-wrapper">
+      <label id="mark-logged-label">Mark Logged</label>
+      <label class="switch" id="mark-logged-switch">
+        <input type="checkbox" id="mark-logged-checkbox">
+        <span class="slider round"></span>
+      </label>
     </div>
-
-    <button id="filter-dropdown-button" class="dropdown-button">Filters</button> 
-    <div id="filter-display-wrapper" class="dropdown-display">
-      <div id="filter-out-students-wrapper" class="filter-label-and-switch-wrapper"> 
-          <label id="filter-out-students-label">Remove Students</label>
-          <label class="switch" id="filter-out-students-switch">
-            <input type="checkbox" id="filter-out-students-checkbox">
-            <span class="slider round"></span>
-          </label>
-        </div>
-        <div id="require-alumni-wrapper" class="filter-label-and-switch-wrapper"> 
-          <label id="require-alumni-label">Require Alumni/Grad</label>
-          <label class="switch" id="require-alumni-switch">
-            <input type="checkbox" id="require-alumni-checkbox">
-            <span class="slider round"></span>
-          </label>
-        </div>
-        <div id="mark-logged-wrapper" class="filter-label-and-switch-wrapper">
-          <label id="mark-logged-label">Mark Logged</label>
-          <label class="switch" id="mark-logged-switch">
-            <input type="checkbox" id="mark-logged-checkbox">
-            <span class="slider round"></span>
-          </label>
-        </div>
+    <div id="mark-status-wrapper" class="filter-label-and-switch-wrapper">
+      <label id="mark-status-label">Mark Status</label>
+      <label class="switch" id="mark-status-switch">
+        <input type="checkbox" id="mark-status-checkbox">
+        <span class="slider round"></span>
+      </label>
     </div>
+  </div>
 
-  </body>
+</body>
+
 </html>

@@ -29,6 +29,7 @@ const filterDisplayWrapper = document.getElementById("filter-display-wrapper") a
 const filterStudentsCheckbox = document.getElementById("filter-out-students-checkbox") as HTMLInputElement
 const requireAlumniCheckbox = document.getElementById("require-alumni-checkbox") as HTMLInputElement
 const markLoggedCheckbox = document.getElementById("mark-logged-checkbox") as HTMLInputElement
+const markStatusCheckbox = document.getElementById("mark-status-checkbox") as HTMLInputElement
 const filterResult = document.getElementById("filter-result") as HTMLLabelElement;
 
 function setConnStatus(text: string) {
@@ -113,6 +114,7 @@ async function refreshFilterUI() {
     filterStudentsCheckbox.checked = false;
     requireAlumniCheckbox.checked = false;
     markLoggedCheckbox.checked = false;
+    markStatusCheckbox.checked = false;
     setFilterResult(`Error getting filter status: ${response?.error || "Unknown error"}`);
     return;
   }
@@ -120,6 +122,7 @@ async function refreshFilterUI() {
   filterStudentsCheckbox.checked = response.filter_out_students;
   requireAlumniCheckbox.checked = response.require_alumni;
   markLoggedCheckbox.checked = response.mark_logged;
+  markStatusCheckbox.checked = response.mark_status;
 
 }
 
@@ -127,11 +130,13 @@ async function updateFilterStatus() {
   const filter_out_students = filterStudentsCheckbox.checked;
   const require_alumni = requireAlumniCheckbox.checked;
   const mark_logged = markLoggedCheckbox.checked;
+  const mark_status = markStatusCheckbox.checked;
   const response = await chrome.runtime.sendMessage({ 
     type: "UPDATE_FILTER_STATUS", 
     filter_out_students: filter_out_students, 
     require_alumni: require_alumni, 
-    mark_logged: mark_logged 
+    mark_logged: mark_logged,
+    mark_status: mark_status
   })
   if (!response?.ok) {
     setFilterResult(`Error updating filter status: ${response?.error || "Unknown error"}`);
@@ -143,7 +148,7 @@ async function updateFilterStatus() {
     setFilterResult("No active tab to apply filter");
     return;
   }
-  chrome.tabs.sendMessage(tabId, { type: "APPLY_FILTER1" }, (response) => {
+  chrome.tabs.sendMessage(tabId, { type: "APPLY_FILTER" }, (response) => {
     if (chrome.runtime.lastError) {
       console.warn("No receiving content script:", chrome.runtime.lastError.message);
       return;
@@ -164,7 +169,9 @@ markLoggedCheckbox?.addEventListener("change", async () => {
   updateFilterStatus();
 })
 
-
+markStatusCheckbox?.addEventListener("change", async () => {
+  updateFilterStatus();
+})
 
 
 async function hideLoginNeededLabels() {
